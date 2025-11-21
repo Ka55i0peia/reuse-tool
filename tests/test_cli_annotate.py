@@ -774,6 +774,26 @@ class TestAnnotate:
             in result.output
         )
 
+    def test_reuse_toml_annotation(self, fake_repository_reuse_toml):
+        """Annotation data is read from REUSE.toml when no CLI options given."""
+
+        python_file = fake_repository_reuse_toml / "doc/index.py"
+        python_file.write_text("pass")
+        expected = cleandoc(
+            """
+            # SPDX-FileCopyrightText: 2017 Jane Doe
+            #
+            # SPDX-License-Identifier: CC0-1.0
+
+            pass
+            """
+        )
+
+        result = CliRunner().invoke(main, ["annotate", "doc/index.py"])
+
+        assert result.exit_code == 0
+        assert python_file.read_text() == expected
+
     def test_template_simple(
         self, fake_repository, mock_date_today, template_simple_source
     ):

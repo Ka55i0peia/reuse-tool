@@ -479,7 +479,16 @@ def annotate(
     # pylint: disable=too-many-arguments,too-many-locals,missing-function-docstring
     project = obj.project
 
-    test_mandatory_option_required(copyrights, licenses, contributors)
+    reuse_info_from_cli: ReuseInfo | None = None
+    years_tuple: tuple[YearRange, ...] = tuple()
+
+    if any((copyrights, licenses, contributors)):
+        years_tuple = get_years(years, exclude_year)
+        reuse_info_from_cli = get_reuse_info(
+            copyrights, licenses, contributors, copyright_prefix, years_tuple
+        )
+    elif not project.global_licensing:
+        test_mandatory_option_required(copyrights, licenses, contributors)
     paths = all_paths(paths, recursive, project)
     verify_paths_comment_style(
         style, fallback_dot_license, skip_unrecognised, force_dot_license, paths
@@ -487,10 +496,6 @@ def annotate(
     # Verify line handling and comment styles before proceeding.
     verify_paths_line_handling(single_line, multi_line, style, paths)
     template, commented = get_template(template_str, project)
-    years_tuple = get_years(years, exclude_year)
-    reuse_info = get_reuse_info(
-        copyrights, licenses, contributors, copyright_prefix, years_tuple
-    )
 
     result = 0
     for path in paths:
@@ -514,6 +519,21 @@ def annotate(
                 encoding = "utf_8"
             path = Path(new_path)
             path.touch()
+        reuse_info = reuse_info_from_cli
+        if reuse_info is None:
+            reuse_info = ReuseInfo()
+            for info in project.reuse_info_of(path):
+                reuse_info = reuse_info.union(info)
+
+        if not reuse_info.contains_info():
+            raise click.UsageError(
+                _(
+                    "Option '--copyright', '--license', or '--contributor' is"
+                    " required, or REUSE.toml must contain annotations for"
+                    " '{path}'."
+                ).format(path=path)
+            )
+
         result += add_header_to_file(
             path=path,
             reuse_info=reuse_info,
