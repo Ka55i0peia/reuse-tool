@@ -148,6 +148,21 @@ Other options
   Instead of aborting when a file extension does not have an associated comment
   style, skip those files.
 
+.. option:: --skip-existing
+
+  Skip files that already contain REUSE information.
+
+.. option:: --import-global
+
+  When specified, the global annotation defined in ``REUSE.toml`` is loaded to
+  identify existing annotations, which supports when used together with option
+  :option:`--skip-existing`.
+
+  .. Note::
+    If a global annotation with a precedence of :class:`override <reuse.global_licensing.PrecedenceType.OVERRIDE>` is found, the annotation
+    process will fail, because an overriding global annotation prevents any local
+    annotations from being applied.
+
 .. option:: --help
 
   Display help and exit.
